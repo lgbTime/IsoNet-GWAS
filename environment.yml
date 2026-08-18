@@ -1,0 +1,33 @@
+# IsoNet-GWAS conda environment
+# ------------------------------
+# Create with:  conda env create -f environment.yml
+# Activate with: conda activate isonet-gwas
+#
+# Covers: Python (pipeline scripts) + R (qq-norm, QQ/Manhattan and network
+# figures). PLINK 1.9 and EMMAX are NOT on conda — install them manually and
+# point config.env at the binaries (see README "Installation").
+name: isonet-gwas
+channels:
+  - conda-forge
+dependencies:
+  # --- Python ---
+  - python=3.11
+  - pip
+  - pandas>=1.5
+  - numpy>=1.23
+  - scipy>=1.9
+  - networkx>=2.8
+  # --- R (figures + phenotype qq-norm) ---
+  - r-base>=4.2
+  - r-qqman          # Manhattan / QQ plots (step 3)
+  - r-genabel        # genomic-control lambda (step 3)
+  - r-genabel.data
+  - r-data.table     # network figures (steps 4-5)
+  - r-ggplot2
+  - r-ggforce
+  - r-ggrepel
+  - r-igraph
+  - r-rcolorbrewer
+  - r-viridislite
+  - r-scales
+  - r-jsonlite       # optional: AI-analysis labels in figures

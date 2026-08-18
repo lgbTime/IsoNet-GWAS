@@ -82,6 +82,40 @@ construction and `.qqman` output are unaffected).
 All external tools are resolved from `config.env`; no hard-coded machine paths
 are used anywhere in the repository.
 
+## Installation
+
+**1. Python + R (one command, recommended)** — conda:
+
+```bash
+conda env create -f environment.yml     # creates the `isonet-gwas` environment
+conda activate isonet-gwas
+```
+
+This installs Python 3.11 (pandas/numpy/scipy/networkx) and all R packages
+(`qqman`, `GenABEL`, `data.table`, `ggplot2`, `ggforce`, `ggrepel`, `igraph`,
+`RColorBrewer`, `viridisLite`, `scales`). `r-genabel`/`r-genabel.data` are
+pulled from conda-forge (GenABEL was removed from CRAN, so a plain
+`install.packages()` will not work).
+
+Prefer pip? Python only: `pip install -r requirements.txt`, then install the R
+packages listed above manually (GenABEL must come from the
+[CRAN archive](https://cran.r-project.org/src/contrib/Archive/GenABEL/)).
+
+**2. PLINK 1.9 and EMMAX** — not on conda; download the binaries and put them
+in `PATH` (or set `PLINK`/`EMMAX`/`EMMAX_KIN` in `config.env`):
+
+| Tool | Download | Notes |
+|------|----------|-------|
+| PLINK 1.9 | https://www.cog-genomics.org/plink/ | static binaries, no dependencies |
+| EMMAX | http://genetics.cs.ucla.edu/emmax/ | need both `emmax-intel64` and `emmax-kin-intel64` |
+| flashpca2 (optional) | https://github.com/gabraham/flashpca | only for the `pca` subcommand |
+
+**3. Verify**:
+
+```bash
+cd demo_test && bash run_demo.sh        # end-to-end run on real GLK data
+```
+
 ## Quick start
 
 1. **Prepare data** — create `data/` (git-ignored) with symlinks or copies of:

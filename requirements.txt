@@ -1,0 +1,9 @@
+# IsoNet-GWAS Python dependencies (pip)
+# --------------------------------------
+# Install with:  pip install -r requirements.txt
+# (R dependencies are NOT pip-installable — use environment.yml or install the
+# R packages listed in README manually.)
+pandas>=1.5
+numpy>=1.23
+scipy>=1.9
+networkx>=2.8
