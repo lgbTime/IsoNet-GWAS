@@ -98,8 +98,13 @@ pulled from conda-forge (GenABEL was removed from CRAN, so a plain
 `install.packages()` will not work).
 
 Prefer pip? Python only: `pip install -r requirements.txt`, then install the R
-packages listed above manually (GenABEL must come from the
-[CRAN archive](https://cran.r-project.org/src/contrib/Archive/GenABEL/)).
+packages listed above manually. **GenABEL is bundled in this repository**
+(`resources/r_packages/`, ~5 MB, GPL-licensed source tarballs) so it can be
+installed without hunting the CRAN archive:
+
+```bash
+Rscript utilities/install_genabel.R     # needs gcc/g++/gfortran (Rtools on Windows)
+```
 
 **2. PLINK 1.9 and EMMAX** — not on conda; download the binaries and put them
 in `PATH` (or set `PLINK`/`EMMAX`/`EMMAX_KIN` in `config.env`):
@@ -336,6 +341,7 @@ PROJECT_ROOT=/path/to/original/project bash demo_test/build_demo_data.sh   # reg
 ```bash
 python3 utilities/extract_iso2geneLoc.py pop240GTF2ref.combined.gtf   # GTF -> isoform/gene location table
 Rscript utilities/qqnorm_pheno.R keep_pheno keep_pheno.qqnorm         # base-R quantile normalization
+Rscript utilities/install_genabel.R                                   # install bundled GenABEL from resources/r_packages/
 python3 utilities/sort_pos_by_columns.py -f genetic_map.bed -c1 1 -c2 2  # sort a table by column(s)
 ```
 
