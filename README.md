@@ -324,4 +324,4 @@ python3 utilities/sort_pos_by_columns.py -f genetic_map.bed -c1 1 -c2 2  # sort 
 
 ## License
 
-TBD — please add a license before public release.
+This project is released under the [MIT License](LICENSE).
