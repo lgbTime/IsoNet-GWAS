@@ -1,0 +1,65 @@
+#!/usr/bin/env Rscript
+args<-commandArgs(TRUE)
+library(qqman)
+dpi=600
+data<-read.table(args[1])
+#data =  read.csv(args[1], sep="\t", header=F)
+#data[,4] <- as.numeric(data[,4])
+#data[,2] <- as.numeric(data[,2])
+#data[,3] <- as.numeric(data[,3])
+#data = na.omit(data)
+maxx<-(-log10(min(data$V4))+4)
+colnames(data)<-c("SNP","CHR","BP","P")
+data$BP<- as.numeric(as.character(data$BP))
+gwas<-data
+name=paste(args[2],".man.jpeg",sep="")
+qq=paste(args[2],".qq.jpeg",sep="")
+jpeg(filename =name,width = 15*dpi, height = 4.8*dpi,res=dpi,quality = 100)
+par(mar = c(4, 6, 4, 4))
+as.data.frame(table(gwas$CHR))
+color=c("#4197d8", "#f8c120", "#413496", "#495226", "#d60b6f", "#e66519", "#d581b7", "#83d3ad", "#7c162c", "#26755d")
+color=c("#f8c120", "#413496", "#d60b6f", "#e66519", "#d581b7", "#7c162c", "#26755d")
+#color=c("#d60b6f", "#f8c120", "#413496","#7c162c", "#4197d8","#26755d", "#d581b7", "#83d3ad","#e66519")
+color=c("#9467BD", "#FF7F0E")
+color=c("#9467BD", "#FF7F0E", "#2CA02C")
+#color=c("#9467BD", "#FF7F0E", "#1F77B4")
+# Optional: highlight a set of SNPs of interest (e.g. significant hits)
+snpsOfInterest <- c()
+
+manhattan(gwas, col = color,highlight = snpsOfInterest,suggestiveline = F, genomewideline = F,cex = 1.2,ylim=c(0,maxx),cex.axis = 2,cex.lab=2.4,family="times")
+abline(h=args[3],col="red",lty=2,cex=1.5)
+#abline(h=7.43,col="blue",lty=2,cex=1.5)
+#abline(h=6.13,col="green",lty=2,cex=1.5)
+dev.off()
+library(GenABEL)
+lam<-(estlambda(gwas$P))$estimate
+lam<-round(lam,2)
+#a<-max(-log10(gwas$P))-1.5
+jpeg(filename=qq,width = 6*dpi, height = 5.3*dpi,res=dpi,quality = 100)
+par(mar = c(6, 8, 0.5, 0.5))
+qq(gwas$P,cex = 1.2,las=1,cex.axis = 2,mgp=c(4,1,0),cex.lab=2.4,col="blue",family="times",xlab=expression(Expected~-log[10](italic(p))),ylab=expression(Observed~-log[10](italic(p))))
+dev.off()
+
+name=paste(args[2],".man.pdf",sep="")
+qq=paste(args[2],".qq.pdf",sep="")
+
+pdf(name,w=14,h=4.5)
+as.data.frame(table(gwas$CHR))
+color=c("#4197d8", "#f8c120", "#413496", "#495226", "#d60b6f", "#e66519", "#d581b7", "#83d3ad", "#7c162c", "#26755d")
+color=c("#f8c120", "#413496", "#d60b6f", "#e66519", "#d581b7", "#7c162c", "#26755d")
+#color=c("#d60b6f", "#f8c120", "#413496","#7c162c", "#4197d8","#26755d", "#d581b7", "#83d3ad","#e66519")
+color=c("#9467BD", "#FF7F0E")
+color=c("#9467BD", "#FF7F0E", "#2CA02C")
+#color=c("#9467BD", "#FF7F0E", "#1F77B4")
+manhattan(gwas, col = color,highlight = snpsOfInterest,suggestiveline = F, genomewideline = F,cex = 1.2,ylim=c(0,maxx),cex.axis = 2,cex.lab=2.4)
+abline(h=args[3],col="red",lty=2,cex=1.5)
+dev.off()
+library(GenABEL)
+lam<-(estlambda(gwas$P))$estimate
+lam<-round(lam,2)
+#a<-max(-log10(gwas$P))-1.5
+pdf(qq,width = 5, height = 5)
+qq(gwas$P,cex = 1.2,las=1,cex.axis = 2,mgp=c(4,1,0),cex.lab=2.4,col="blue",xlab=expression(Expected~-log[10](italic(p))),ylab=expression(Observed~-log[10](italic(p))))
+dev.off()
+
+

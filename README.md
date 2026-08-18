@@ -1,6 +1,6 @@
-# IGWAS — Isoform-PAV GWAS coupled with a two-layer network
+# IsoNet-GWAS — Isoform-PAV GWAS coupled with a two-layer network
 
-**IGWAS** is a pangenome isoform-presence/absence-variation (PAV) GWAS framework
+**IsoNet-GWAS** is a pangenome isoform-presence/absence-variation (PAV) GWAS framework
 that couples genetic association with a **two-layer network** to move from
 "significant isoform" to "regulatory module and hub isoform":
 
@@ -36,7 +36,7 @@ that couples genetic association with a **two-layer network** to move from
 ## Repository layout
 
 ```
-IGWAS_GITHUB/
+isonet-gwas/
 ├── 00_master_pipeline.sh        # end-to-end runner (steps 1-5)
 ├── config.env                   # all tool paths, data locations, AI keys
 ├── 01_isoform_genetic_map/      # Step 1: PAV -> genetic map -> PLINK
@@ -206,7 +206,7 @@ marker. The map is produced here, then consumed by Step 3 (`-map` argument of
   highlight hits.
 
 ### Step 4 — Layer 1: co-function network (`04_layer1_cofunction_network/`)
-- `IGWAS_DSNET_LAYER1.py` — significant isoforms (p < `P_VALUE_THRESHOLD`) from
+- `ISONET_LAYER1.py` — significant isoforms (p < `P_VALUE_THRESHOLD`) from
   all `*.pheno.qqman` files → parent-gene mapping (GTF/GFF) → eggNOG annotation
   → co-function edges (shared GO/PFAM/KEGG/COG/description terms) → module
   detection → optional LLM module naming and confidence scoring
@@ -214,22 +214,103 @@ marker. The map is produced here, then consumed by Step 3 (`-map` argument of
 - `build_v1_concentric.py` + `plot_layer1_network.R` — V1 concentric-circle
   network figure (full / co-function / with-orphans views).
 - `plot_cofunction_network.R` — module-colored co-function plots, invoked
-  automatically by `IGWAS_DSNET_LAYER1.py`.
+  automatically by `ISONET_LAYER1.py`.
 
 ### Step 5 — Layer 2: expression network (`05_layer2_expression_network/`)
 - `prefilter_expression_matrix.py` — removes low-expression isoforms from the
   TPM matrix (mean TPM ≥ 0.5 **or** TPM ≥ 1 in ≥ 20 % of samples).
-- `IGWAS_DSNET_LAYER2.py` — expands each AI-confirmed high-confidence module
+- `ISONET_LAYER2.py` — expands each AI-confirmed high-confidence module
   by expression co-variation, ranks regulators by a combined GWAS + expression
   score, and reports rising hubs.
 - `plot_layer2_network.R` — per-module network / evidence-scatter / kME plots.
 
+## Command reference (one-liners)
+
+Every script in the repository, with a minimal runnable example. `$DATA_DIR`,
+`$GTF`, `$GO_TAB` ... refer to `config.env` values (source it first).
+
+**Master / config**
+
+```bash
+source config.env                                # load tool paths + data locations
+./00_master_pipeline.sh                          # full pipeline, steps 1-5
+./00_master_pipeline.sh 3 5                      # run only steps 3,4,5
+```
+
+**Step 1 — isoform genetic map (`01_isoform_genetic_map/`)**
+
+```bash
+bash 01_isoform_genetic_map/bed2map/get_uniq_pos.sh                            # BED -> unique-position map
+python3 01_isoform_genetic_map/bed2map/reassign_repeated_startpos2.py Lsat_Salinas_v11_chr1.bed
+python3 01_isoform_genetic_map/bed2map/reassign_repeated_startpos2_v2.py Lsat_Salinas_v11_chr1.bed
+python3 01_isoform_genetic_map/pav2ped/pav_xls2ped.py pav.xls genetic_map.map  # PAV matrix -> PED
+bash 01_isoform_genetic_map/pav2ped/plink.sh                                    # PED -> bed/tped
+```
+
+**Step 2 — plus-marker genotype (`02_genotype_plus_marker/`)**
+
+```bash
+python3 02_genotype_plus_marker/vcf_sv_to_plink.py --vcf extracted.gene_body.filtered_num_chr.vcf --tfam lettome.tfam --out vcf_variants
+python3 02_genotype_plus_marker/add_new_pos2tpedFormat.py 4 108310413 glk --tfam glk.tfam --tped glk.tped --map glk.map --gt glk.genotype --out addmode_Only4GLK
+bash 02_genotype_plus_marker/run.sh                                            # merge SV + GLK VCFs into the PAV genotype
+```
+
+**Step 3 — GWAS (`03_gwas/`)**
+
+```bash
+python3 03_gwas/gwasor.py pri_gwas -b $GT_PREFIX -p all_chlorophy_a+b -t no -sig 5 -o gwasout_all_chlorophy_a+b -map $DATA_DIR/map/genetic_map.map
+python3 03_gwas/gwasor.py fine_gwas -b $GT_PREFIX -p keep_all_chlorophy_a+b.qqnorm -t no -sig 5 -o gwasout_fine -map $DATA_DIR/map/genetic_map.map
+python3 03_gwas/gwasor.py emmax-kin -b $GT_PREFIX -kin BN -o kinship_out
+python3 03_gwas/gwasor.py emmax_genotype -b $GT_PREFIX -keep keep.list -gt emmax_gt -o gt_out
+python3 03_gwas/gwasor.py pca -b $GT_PREFIX -mp 3 -o pca_out
+python3 03_gwas/gwasor.py ps2plotdata -ps result.ps -map genetic_map.map -o plot_out
+python3 03_gwas/gwasor.py plot -qqman result.qqman -sig 5 -o plot_out
+bash 03_gwas/gwas.sh                                                            # loop over $TRAITS
+bash 03_gwas/gwas_norm.sh                                                       # variant with different output prefix
+Rscript 03_gwas/qqman4Pop_lecttuce.R result.qqman result.qqman 5                # Manhattan + QQ (jpeg)
+Rscript 03_gwas/qqman4Pop_lecttuce_pdf.R result.qqman result.qqman 5            # Manhattan + QQ (pdf)
+```
+
+**Step 4 — Layer 1: co-function network (`04_layer1_cofunction_network/`)**
+
+```bash
+python3 04_layer1_cofunction_network/ISONET_LAYER1.py --qqman-dir $QQMAN_DIR --qqman-pattern "*.pheno.qqman" --gtf $GTF --gff $GFF --annotations $ANNOTATIONS --go-tab $GO_TAB --pvalue-threshold 1e-5 --out-prefix layer1/sig --build-network --network-top-n 300 --network-min-shared 2 --network-min-module-size 3 --plot-network --api-key $DEEPSEEK_API_KEY --model $DEEPSEEK_MODEL --api-base $DEEPSEEK_API_BASE --thinking
+python3 04_layer1_cofunction_network/build_v1_concentric.py chlorophyll.pheno.qqman $ANNOTATIONS $GFF $GO_TAB layer1
+Rscript 04_layer1_cofunction_network/plot_layer1_network.R layer1/v1_nodes.tsv layer1/v1_edges.tsv layer1/sig_concentric
+Rscript 04_layer1_cofunction_network/plot_cofunction_network.R sig_chlorophyll_cofunction_nodes.tsv sig_chlorophyll_cofunction_edges.tsv sig_chlorophyll_cofunction_modules.tsv sig_chlorophyll_network_ai_analysis.json sig_chlorophyll
+bash 04_layer1_cofunction_network/run_layer1.sh
+```
+
+**Step 5 — Layer 2: expression network (`05_layer2_expression_network/`)**
+
+```bash
+python3 05_layer2_expression_network/prefilter_expression_matrix.py --input Pop_isoform_TPM_by_compareGTF.txt --output Pop_isoform_TPM_filtered.txt
+python3 05_layer2_expression_network/ISONET_LAYER2.py --modules-tsv layer1/sig_chlorophyll_cofunction_modules.tsv --nodes-tsv layer1/sig_chlorophyll_cofunction_nodes.tsv --edges-tsv layer1/sig_chlorophyll_cofunction_edges.tsv --annotations $ANNOTATIONS --expression $EXPRESSION_MATRIX --gtf $GTF --qqman chlorophyll.pheno.qqman --go-tab $GO_TAB --out-prefix layer2/out --modules M1 M3 --min-shared-terms 2 --max-expansion 500 --expansion-hops 1 --corr-threshold 0.65 --fdr-threshold 0.05 --min-tpm 0.1 --gwas-weight 0.3 --expr-weight 0.7 --min-rank-rise 10 --min-gwas-pvalue 0.01 --tf-min-corr 0.3 --tf-top-n 300
+Rscript 05_layer2_expression_network/plot_layer2_network.R module_M1_coexpression_edges.tsv module_M1_regulatory_ranking.tsv layer1/sig_chlorophyll_cofunction_nodes.tsv M1 M1 NONE
+bash 05_layer2_expression_network/run_layer2.sh
+```
+
+**Demo (`demo_test/`)**
+
+```bash
+cd demo_test && bash run_demo.sh                       # gwasor -> Layer-1 -> Layer-2
+PROJECT_ROOT=/path/to/original/project bash demo_test/build_demo_data.sh   # regenerate the demo subset
+```
+
+**Utilities (`utilities/`)**
+
+```bash
+python3 utilities/extract_iso2geneLoc.py pop240GTF2ref.combined.gtf   # GTF -> isoform/gene location table
+Rscript utilities/qqnorm_pheno.R keep_pheno keep_pheno.qqnorm         # base-R quantile normalization
+python3 utilities/sort_pos_by_columns.py -f genetic_map.bed -c1 1 -c2 2  # sort a table by column(s)
+```
+
 ## Notes
 
 - **Metabolome application**: the original project also applied Layer-1 to
-  many metabolite GWAS files at once (`IGWAS_DSNET_V2.py`, a thin variant of
-  `IGWAS_DSNET_LAYER1.py` with OpenAI/DeepSeek dual-provider AI support). It
-  is not needed for the two-layer flow and is therefore not included here.
+  many metabolite GWAS files at once (a thin variant of `ISONET_LAYER1.py`
+  with OpenAI/DeepSeek dual-provider AI support). It is not needed for the
+  two-layer flow and is therefore not included here.
 - **API keys**: the LLM step is optional. If `DEEPSEEK_API_KEY` is empty, the
   network construction and plotting still run; only the AI module-calling is
   skipped. Never commit a real key — `config.env` is designed to be filled in

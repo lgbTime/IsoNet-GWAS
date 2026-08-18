@@ -1,0 +1,67 @@
+# ---------------------------------------------------------------------------
+# IsoNet-GWAS .gitignore
+# ---------------------------------------------------------------------------
+
+# Input data (place/symlink your own files under data/ — never commit them)
+data/
+
+# PLINK / genotype intermediates
+*.bed
+*.bim
+*.fam
+*.tped
+*.tfam
+*.map
+*.ped
+*.nosex
+*.log
+*.kinf
+*.ps
+*.aBN
+*.aIBS
+
+# GWAS / network outputs
+gwasout*/
+layer1_cofunction/
+layer2_expression/
+out_group*/
+*_cofunction_nodes.tsv
+*_cofunction_edges.tsv
+*_cofunction_modules.tsv
+*_network_ai_analysis.json
+*_network_ai_report.txt
+*_significant_isoforms.tsv
+*_summary_stats.txt
+*_cross_metabolite_isoforms.tsv
+*_rising_hubs.tsv
+
+# Figures
+*.pdf
+*.png
+*.jpeg
+*.jpg
+*.tiff
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# R
+.Rhistory
+.RData
+
+# Misc
+*.tmp
+*.bak
+*.swp
+.DS_Store
+
+# ---------------------------------------------------------------------------
+# demo_test: inputs are committed intentionally; only the run outputs are ignored
+# ---------------------------------------------------------------------------
+!demo_test/data/
+!demo_test/data/**
+demo_test/output/
+demo_test/demo_run.log
+demo_test/selected_ids.txt
